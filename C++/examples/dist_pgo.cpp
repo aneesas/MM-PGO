@@ -42,9 +42,11 @@ int main(int argc, char *argv[]) {
        boost::program_options::value<bool>()->default_value(true),
        "whether accelerated or not") // whether accelerated or not
       ("save", boost::program_options::value<bool>()->default_value(true),
-       "whether to save the optimization results or not"); // whether to save
-                                                           // the optimization
-                                                           // results or not
+       "whether to save the optimization results or not") // whether to save
+                                                          // the optimization
+                                                          // results or not
+      ("odometry_init", boost::program_options::value<bool>()->default_value(false),
+      "whether to initialize from odometry or not");
 
   boost::program_options::variables_map program_options;
   boost::program_options::store(
@@ -73,6 +75,11 @@ int main(int argc, char *argv[]) {
   bool dist_chordal = program_options["dist_init"].as<bool>();
   std::string loss_type = program_options["loss"].as<std::string>();
   bool save = program_options["save"].as<bool>();
+  bool odometry_init = program_options["odometry_init"].as<bool>();
+
+  if (odometry_init) {
+    LOG(INFO) << "Skipping chordal initialization and using odometry." << std::endl;
+  }
 
   DPGO::Loss loss;
 
@@ -141,7 +148,29 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  if (dist_chordal) {
+  // Prioritize odometry initialization option and only do chordal init if odometry_init not set
+  if (odometry_init) {
+    std::cout << "===============================================" << std::endl;
+    std::cout << "Initialization" << std::endl;
+    std::cout << "-----------------------------------------------" << std::endl;
+
+    // Set centralized state from odometry in file
+    X.setZero((d + 1) * num_poses, d);  // 1 row for t, 3 rows for R
+    if (DPGO::set_X_from_g2o(filename, X, num_poses) < 0) {
+      LOG(FATAL) << "Incorrect number of poses read from file!" << std::endl;
+    }
+
+    // Set individual agents' state from centralized state
+    for (int alpha = 0, index = 0; alpha < num_nodes; alpha++) {
+      const auto &n = problems[alpha]->n()[0];
+
+      Xk[alpha].setZero((d + 1) * n, d);
+      Xk[alpha].topRows(n) = X.middleRows(index, n);
+      Xk[alpha].bottomRows(d * n) = X.middleRows(num_poses + d * index, d * n);
+
+      index += n;
+    }
+  } else if (dist_chordal) {
     SESync::SESyncOpts SESyncOptions;
     SESyncOptions.verbose = true;
 
