@@ -3901,4 +3901,76 @@ int simplify_regular_data_matrix(
 
   return 0;
 }
+
+int set_X_from_g2o(const std::string &file, Matrix &X, const int n_poses) {
+  // A string used to contain the contents of a single line
+  std::string line;
+
+  // A string used to extract tokens from each line one-by-one
+  std::string token;
+
+  // Preallocate various useful quantities
+  double x, y, z, theta, qx, qy, qz, qw;
+  size_t id;
+
+  // Open the file for reading
+  std::ifstream infile(file);
+
+  int poses_read = 0;
+
+  while (std::getline(infile, line)) {
+    // Construct a stream from the string
+    std::stringstream strstrm(line);
+
+    // Extract the first token from the string
+    strstrm >> token;
+
+    if (token == "VERTEX_SE3:QUAT") {
+      /**
+       * The g2o format specifies a 3D pose in the following form:
+       * VERTEX_SE3:QUAT id, x, y, z, qx, qy, qz, qw
+       */
+
+      const int dim = 3;
+
+      // Extract formatted output
+      strstrm >> id >> x >> y >> z >> qx >> qy >> qz >> qw;
+
+      // Fill in the state matrix
+      Eigen::Matrix<double, dim, 1> t(x, y, z);
+      const auto R = Eigen::Quaternion<double>(qw, qx, qy, qz).toRotationMatrix();
+      X.middleRows(id, 1) = t;
+      X.middleRows(n_poses + dim * id, dim) = R;
+
+      poses_read++;
+    } else if (token == "VERTEX_SE2") {
+      /**
+       * The g2o format specifies a 2D pose in the following form:
+       * VERTEX_SE2 id, x, y, theta
+       */
+      const int dim = 2;
+
+      // Extract formatted output
+      strstrm >> id >> x >> y >> theta;
+
+      // Fill in the state matrix
+      std::cout << "[set_X_from_g2o] WARNING: SE2 vertex reading not implemented" << std::endl;
+
+      poses_read++;
+    } else if (token == "EDGE_SE3:QUAT" || token == "EDGE_SE2") {
+      // This is a measurement; skip it
+      continue;
+    } else {
+      std::cout << "[set_X_from_g2o] WARNING: Unrecognized token type: " << token << std::endl;
+      continue;
+    }
+  }
+
+  if (poses_read != n_poses) {
+    std::cout << "[set_X_from_g2o] ERROR: Expected " << n_poses << ", only read in "
+              << poses_read << " poses." << std::endl;
+    return -1;
+  }
+  return 0;
+}
 }  // namespace DPGO

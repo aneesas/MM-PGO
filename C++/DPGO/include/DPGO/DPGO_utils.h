@@ -563,4 +563,13 @@ int project_to_SO3n(const Derived &A, Result &R) {
 
   return 0;
 }
+
+// *****************************************************************************
+// Read initialization values from a g2o-formatted file
+// *****************************************************************************
+// file: g2o file containing VERTEX information
+// X: matrix to populate with initial estimates
+// n_poses: number of poses expected to be read from file
+// -----------------------------------------------------------------------------
+int set_X_from_g2o(const std::string &file, Matrix &X, const int n_poses);
 }  // namespace DPGO
