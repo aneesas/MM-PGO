@@ -490,6 +490,19 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  // Save initialization
+  if (save) {
+    std::string initfile = "init.txt";
+    std::ofstream output(initfile);
+
+    if (!output.is_open())
+      return -1;
+
+    output << X << std::endl;
+
+    output.close();
+  }
+
   X.setZero((d + 1) * num_poses, d);
 
   for (int alpha = 0; alpha < num_nodes; alpha++) {
@@ -580,6 +593,7 @@ int main(int argc, char *argv[]) {
 
     output.close();
 
+    // Shift all estimates such that first pose is at origin
     DPGO::Vector t = X.row(0);
     X.topRows(num_poses).rowwise() -= t.transpose();
 
