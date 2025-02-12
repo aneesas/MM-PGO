@@ -565,6 +565,14 @@ int project_to_SO3n(const Derived &A, Result &R) {
 }
 
 // *****************************************************************************
+// Compute odometry initialization from a g2o-formatted file of measurements
+// *****************************************************************************
+// file: g2o file containing EDGE information
+// X: matrix to populate with initial estimates
+// n_poses: number of poses expected to be read from file
+// -----------------------------------------------------------------------------
+int set_X_from_odometry(const std::string &file, Matrix &X, const int n_poses);
+// *****************************************************************************
 // Read initialization values from a g2o-formatted file
 // *****************************************************************************
 // file: g2o file containing VERTEX information
@@ -572,4 +580,13 @@ int project_to_SO3n(const Derived &A, Result &R) {
 // n_poses: number of poses expected to be read from file
 // -----------------------------------------------------------------------------
 int set_X_from_g2o(const std::string &file, Matrix &X, const int n_poses);
+// *****************************************************************************
+// Read initialization values directly from a text file
+// *****************************************************************************
+// file: text file containing X in the same format as writing an Eigen matrix
+//    directly to file
+// X: matrix to populate with initial estimates
+// n_poses: number of poses expected to be read from file
+// -----------------------------------------------------------------------------
+int set_X_from_txt(const std::string &file, Matrix &X, const int n_poses);
 }  // namespace DPGO

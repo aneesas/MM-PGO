@@ -3902,6 +3902,58 @@ int simplify_regular_data_matrix(
   return 0;
 }
 
+int set_X_from_odometry(const std::string &file, Matrix &X, const int n_poses) {
+  int poses_read;
+  measurements_t measurements;
+  if (read_g2o_file(0, file, poses_read, measurements) != 0) {
+    std::cout << "[set_X_from_odometry] Error reading in g2o file" << std::endl;
+    return -1;
+  }
+  if (poses_read != n_poses) {
+    std::cout << "[set_X_from_odometry] Error: expected " << n_poses << " poses, got "
+              << poses_read << " poses" << std::endl;
+    return -1;
+  }
+
+  // Find measurement dimension
+  if (measurements.empty()) {
+    std::cout << "[set_X_from_odometry] No measurements!" << std::endl;
+    return -1;
+  }
+  int d = measurements[0].t.size();
+  X.setZero((d + 1) * n_poses, d);
+
+  // We assume here that there are measurements for every pair of vertices in the form
+  // (i, i+1) for the pose IDs
+  // and that those measurements occur sequentially in the measurement vector.
+  // Note that this is NOT always true for g2o files, e.g., in the cubicle and rim datasets.
+  int current_id = 0;
+  Matrix T_curr = Matrix::Identity(d + 1, d);
+  // Set first pose to origin (already set matrix to zero, so just set rotation)
+  X.middleRows(n_poses, d) = Matrix::Identity(d, d);
+  for (const auto& m : measurements) {
+    if (m.i.pose == current_id && m.j.pose == current_id + 1) {
+      // Compute odometry
+      Matrix dT = Matrix::Identity(d + 1, d + 1);
+      dT.topLeftCorner(d, d) = m.R;
+      dT.block(0, d, d, 1) = m.t;
+      const auto T_next = T_curr * dT;
+
+      // Set state
+      const auto t = T_next.block(0, d, d, 1);
+      const auto R = T_next.topLeftCorner(d, d);
+      X.middleRows(current_id + 1, 1) = t.transpose();
+      X.middleRows(n_poses + d * (current_id + 1), d) = R.transpose();
+
+      // Increment
+      current_id++;
+      T_curr = T_next;
+    }
+  }
+
+  return 0;
+}
+
 int set_X_from_g2o(const std::string &file, Matrix &X, const int n_poses) {
   // A string used to contain the contents of a single line
   std::string line;
@@ -3938,9 +3990,10 @@ int set_X_from_g2o(const std::string &file, Matrix &X, const int n_poses) {
 
       // Fill in the state matrix
       Eigen::Matrix<double, dim, 1> t(x, y, z);
+      std::cout << "t = " << t << std::endl;
       const auto R = Eigen::Quaternion<double>(qw, qx, qy, qz).toRotationMatrix();
-      X.middleRows(id, 1) = t;
-      X.middleRows(n_poses + dim * id, dim) = R;
+      X.middleRows(id, 1) = t.transpose();
+      X.middleRows(n_poses + dim * id, dim) = R.transpose();
 
       poses_read++;
     } else if (token == "VERTEX_SE2") {
@@ -3954,7 +4007,10 @@ int set_X_from_g2o(const std::string &file, Matrix &X, const int n_poses) {
       strstrm >> id >> x >> y >> theta;
 
       // Fill in the state matrix
-      std::cout << "[set_X_from_g2o] WARNING: SE2 vertex reading not implemented" << std::endl;
+      Eigen::Matrix<double, dim, 1> t(x, y);
+      const auto R = Eigen::Rotation2D<Scalar>(theta).toRotationMatrix();
+      X.middleRows(id, 1) = t.transpose();
+      X.middleRows(n_poses + dim * id, dim) = R.transpose();
 
       poses_read++;
     } else if (token == "EDGE_SE3:QUAT" || token == "EDGE_SE2") {
@@ -3972,5 +4028,22 @@ int set_X_from_g2o(const std::string &file, Matrix &X, const int n_poses) {
     return -1;
   }
   return 0;
+}
+
+int set_X_from_txt(const std::string &file, Matrix &X, const int n_poses) {
+  // Adapted from
+  // https://github.com/AleksandarHaber/Save-and-Load-Eigen-Cpp-Matrices-Arrays-to-and-from-CSV-files
+
+  std::ifstream input(file);
+  if (!input.is_open()) {
+    std::cout << "[set_X_from_txt] ERROR: couldn't open file " << file << std::endl;
+    return -1;
+  }
+
+  // Store matrix variables row-wise when reading in, i.e.,
+  // M = [a b c
+  //      d e f]
+  // becomes matrix_entries = [a, b, c, d, e, f]
+
 }
 }  // namespace DPGO
