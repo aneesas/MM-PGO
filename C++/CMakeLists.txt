@@ -108,7 +108,7 @@ add_subdirectory(${DChordal_DIR})
 
 # Examples
 if(${MM_PGO_BUILD_TESTS})
-  add_subdirectory(examples)
+  add_subdirectory(tests)
 endif()
 
 # Unit tests

@@ -587,6 +587,7 @@ int set_X_from_g2o(const std::string &file, Matrix &X, const int n_poses);
 //    directly to file
 // X: matrix to populate with initial estimates
 // n_poses: number of poses expected to be read from file
+// dim: dimension of variables (2 or 3)
 // -----------------------------------------------------------------------------
-int set_X_from_txt(const std::string &file, Matrix &X, const int n_poses);
+int set_X_from_txt(const std::string &file, Matrix &X, const int n_poses, const int dim);
 }  // namespace DPGO

@@ -3,6 +3,7 @@
 #include <fstream>
 #include <memory>
 #include <utility>
+#include <vector>
 
 namespace DPGO {
 int read_g2o_file(int a, const std::string &filename, int &num_poses,
@@ -4030,8 +4031,8 @@ int set_X_from_g2o(const std::string &file, Matrix &X, const int n_poses) {
   return 0;
 }
 
-int set_X_from_txt(const std::string &file, Matrix &X, const int n_poses) {
-  // Adapted from
+int set_X_from_txt(const std::string &file, Matrix &X, const int n_poses, const int dim) {
+  // Lightly adapted from
   // https://github.com/AleksandarHaber/Save-and-Load-Eigen-Cpp-Matrices-Arrays-to-and-from-CSV-files
 
   std::ifstream input(file);
@@ -4044,6 +4045,35 @@ int set_X_from_txt(const std::string &file, Matrix &X, const int n_poses) {
   // M = [a b c
   //      d e f]
   // becomes matrix_entries = [a, b, c, d, e, f]
+  std::vector<double> matrix_entries;
 
+  // Convenience variables for storing things as we read them in
+  std::string row_string;
+  std::string entry;
+
+  // Track the number of rows read in
+  int row_num = 0;
+
+  while (std::getline(input, row_string)) {
+    std::stringstream row_string_stream(row_string);
+
+    while (std::getline(row_string_stream, entry, ' ')) {
+      matrix_entries.push_back(std::stod(entry));
+    }
+    row_num++;
+  }
+
+  // Verify we've read in as many lines as we'd expect
+  const int expected_rows = n_poses * (dim + 1);
+  if (expected_rows != row_num) {
+    std::cout << "[set_X_from_txt] ERROR: Expected " << expected_rows << " rows in file, but "
+                 "read in " << row_num << " rows." << std::endl;
+    return -1;
+  }
+
+  // Map the data to the shape we need for X
+  X = Eigen::Map<Matrix>(matrix_entries.data(), row_num, dim);
+
+  return 0;
 }
 }  // namespace DPGO

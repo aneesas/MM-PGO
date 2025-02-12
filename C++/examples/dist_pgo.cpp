@@ -153,13 +153,13 @@ int main(int argc, char *argv[]) {
 
   // Prioritize file and odometry initialization options
   // and only do chordal init if neither are set
-  if (initialization_file.size > 0) {
+  if (initialization_file.size() > 0) {
     std::cout << "===============================================" << std::endl;
     std::cout << "Initialization from file: " << initialization_file << std::endl;
     std::cout << "-----------------------------------------------" << std::endl;
 
     X.setZero((d + 1) * num_poses, d);
-    if (DPGO::set_X_from_txt(initialization_file, X, num_poses) < 0) {
+    if (DPGO::set_X_from_txt(initialization_file, X, num_poses, d) < 0) {
       LOG(FATAL) << "Couldn't set initial state from text file!" << std::endl;
     }
 
