@@ -32,6 +32,8 @@ set(ENABLE_FAST_INSTRUCTIONS ON CACHE BOOL "Enable faster instruction sets (SIMD
 set(ENABLE_OPENMP ON CACHE BOOL "Enable OpenMP (if available)")
 # Enable code profiling using gperftools
 set(ENABLE_PROFILING OFF CACHE BOOL "Enable code profiling using gperftools")
+# Build unit tests
+set(MM_PGO_BUILD_TESTS OFF CACHE BOOL "Build unit tests")
 
 if(${ENABLE_FAST_INSTRUCTIONS})
 message(STATUS "Enabling SIMD/AVX instruction sets")
@@ -105,4 +107,8 @@ set(DChordal_DIR ${CMAKE_CURRENT_SOURCE_DIR}/DChordal/ CACHE PATH "Path to top-l
 add_subdirectory(${DChordal_DIR})
 
 # Examples
-add_subdirectory(examples)
+if(${MM_PGO_BUILD_TESTS})
+  add_subdirectory(examples)
+endif()
+
+# Unit tests
