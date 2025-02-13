@@ -107,8 +107,9 @@ set(DChordal_DIR ${CMAKE_CURRENT_SOURCE_DIR}/DChordal/ CACHE PATH "Path to top-l
 add_subdirectory(${DChordal_DIR})
 
 # Examples
+add_subdirectory(examples)
+
+# Unit tests
 if(${MM_PGO_BUILD_TESTS})
   add_subdirectory(tests)
 endif()
-
-# Unit tests

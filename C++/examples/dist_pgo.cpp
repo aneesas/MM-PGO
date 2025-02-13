@@ -13,6 +13,7 @@
 #include <fstream>
 #include <iomanip>
 #include <memory>
+#include <string>
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {
@@ -46,8 +47,8 @@ int main(int argc, char *argv[]) {
                                                           // the optimization
                                                           // results or not
       ("odometry_init", boost::program_options::value<bool>()->default_value(false),
-      "whether to initialize from odometry or not"),
-      ("file_init", boost::program_options::value<std::string>()->default_value(""),
+      "whether to initialize from odometry or not")
+      ("file_init", boost::program_options::value<std::string>()->default_value(std::string()),
        "text file to read in initial state from");
 
   boost::program_options::variables_map program_options;
@@ -79,10 +80,6 @@ int main(int argc, char *argv[]) {
   bool save = program_options["save"].as<bool>();
   bool odometry_init = program_options["odometry_init"].as<bool>();
   std::string initialization_file = program_options["file_init"].as<std::string>();
-
-  if (odometry_init) {
-    LOG(INFO) << "Skipping chordal initialization and using odometry." << std::endl;
-  }
 
   DPGO::Loss loss;
 
@@ -153,7 +150,7 @@ int main(int argc, char *argv[]) {
 
   // Prioritize file and odometry initialization options
   // and only do chordal init if neither are set
-  if (initialization_file.size() > 0) {
+  if (!(initialization_file.empty())) {
     std::cout << "===============================================" << std::endl;
     std::cout << "Initialization from file: " << initialization_file << std::endl;
     std::cout << "-----------------------------------------------" << std::endl;
