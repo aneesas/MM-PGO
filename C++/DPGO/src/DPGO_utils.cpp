@@ -1,6 +1,7 @@
 #include <DPGO/DPGO_utils.h>
 
 #include <fstream>
+#include <istream>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -4035,6 +4036,12 @@ int set_X_from_txt(const std::string &file, Matrix &X, const int n_poses, const 
   // Lightly adapted from
   // https://github.com/AleksandarHaber/Save-and-Load-Eigen-Cpp-Matrices-Arrays-to-and-from-CSV-files
 
+  if (dim != 2 && dim != 3) {
+    std::cout << "[set_X_from_txt] ERROR: can't parse text files if dimension is no 2 or 3"
+              << std::endl;
+    return -1;
+  }
+
   std::ifstream input(file);
   if (!input.is_open()) {
     std::cout << "[set_X_from_txt] ERROR: couldn't open file " << file << std::endl;
@@ -4049,18 +4056,27 @@ int set_X_from_txt(const std::string &file, Matrix &X, const int n_poses, const 
 
   // Convenience variables for storing things as we read them in
   std::string row_string;
-  std::string entry;
+  double e1, e2, e3; // for reading in a single row
 
   // Track the number of rows read in
   int row_num = 0;
 
   while (std::getline(input, row_string)) {
-    std::stringstream row_string_stream(row_string);
+    std::istringstream row_string_stream(row_string);
+    row_string_stream >> std::skipws;
 
-    while (std::getline(row_string_stream, entry, ' ')) {
-      matrix_entries.push_back(std::stod(entry));
+    if (dim == 2) {
+      row_string_stream >> e1 >> e2;
+      matrix_entries.push_back(e1);
+      matrix_entries.push_back(e2);
+      row_num++;
+    } else if (dim == 3) {
+      row_string_stream >> e1 >> e2 >> e3;
+      matrix_entries.push_back(e1);
+      matrix_entries.push_back(e2);
+      matrix_entries.push_back(e3);
+      row_num++;
     }
-    row_num++;
   }
 
   // Verify we've read in as many lines as we'd expect
@@ -4072,7 +4088,8 @@ int set_X_from_txt(const std::string &file, Matrix &X, const int n_poses, const 
   }
 
   // Map the data to the shape we need for X
-  X = Eigen::Map<Matrix>(matrix_entries.data(), row_num, dim);
+  X = Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
+      (matrix_entries.data(), row_num, dim);
 
   return 0;
 }
