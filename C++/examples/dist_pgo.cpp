@@ -514,19 +514,6 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  // Save initialization
-  if (save) {
-    std::string initfile = "init.txt";
-    std::ofstream output(initfile);
-
-    if (!output.is_open())
-      return -1;
-
-    output << X << std::endl;
-
-    output.close();
-  }
-
   X.setZero((d + 1) * num_poses, d);
 
   for (int alpha = 0; alpha < num_nodes; alpha++) {
@@ -538,6 +525,19 @@ int main(int argc, char *argv[]) {
     X.middleRows(i, n[0]) = dpgo_hash[alpha]->results().Xk.topRows(n[0]);
     X.middleRows(num_poses + d * i, d * n[0]) =
         dpgo_hash[alpha]->results().Xk.middleRows(n[0], d * n[0]);
+  }
+
+  // Save initialization
+  if (save) {
+    std::string initfile = "init.txt";
+    std::ofstream output(initfile);
+
+    if (!output.is_open())
+      return -1;
+
+    output << X << std::endl;
+
+    output.close();
   }
 
   dpgo_star.evaluate_f(X, fobj);
